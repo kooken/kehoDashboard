@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&family=Rubik+Doodle+Shadow&display=swap');
+
+h1 {
+    text-align: center;
+    background-color: white;
+    font-family: 'Raleway', sans-serif;
+    color: #b07afe;
+    padding: 20px 0px;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 0;
+}
+
+table {
+    width: 1200px;
+    border-collapse: collapse;
+    font-family: 'Raleway', sans-serif;
+    color: black;
+    margin: 20px auto;
+    font-size: 18px;
+    text-align: center;
+    box-shadow: 0 0 5px rgba(176, 122, 254, 0.5);
+}
+
+th, td {
+    border: 1px solid #b07afe;
+    padding: 8px;
+}
+
+th {
+    background-color: #ffffff;
+}
+
+tr:hover {
+    background-color: #d6bfff;
+}

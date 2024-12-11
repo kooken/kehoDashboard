@@ -1,0 +1,39 @@
+{% extends 'main/base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'main/css/login.css' %}" media="screen">
+{% endblock %}
+{% block content %}
+<div class="login-page">
+    <form method="post" action="{% url 'users:login' %}" class="login-form">
+        <h2>Login</h2>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div id="non-field-errors" class="text-danger">
+            {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% for field in form %}
+        <div id="form-group-{{ field.name }}" class="form-group">
+            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+            {{ field }}
+
+            {% if field.errors %}
+            <div id="error-{{ field.name }}" class="text-danger">
+                {% for error in field.errors %}
+                <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn-login">Login</button>
+        <div class="forgot-password">
+            <a href="{% url 'users:password_reset' %}" class="btn-forgot-password">Forgot Password?</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

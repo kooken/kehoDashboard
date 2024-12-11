@@ -1,0 +1,27 @@
+{% extends 'main/base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'main/css/profile.css' %}" media="screen">
+{% endblock %}
+{% block content %}
+<div class="profile-page">
+    <form method="post" class="profile-form">
+        <h2 id="profile-heading">Delete Account</h2>
+        <p>This action cannot be undone. Please enter your email to confirm.</p>
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}
+            <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn-delete">Confirm and Delete</button>
+        <div class="btn-actions">
+            <a href="{% url 'users:profile' %}" class="custom-button">Back to profile</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

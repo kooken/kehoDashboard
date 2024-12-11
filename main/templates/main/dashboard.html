@@ -1,0 +1,20 @@
+{% extends 'main/base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'main/css/dashboard.css' %}" media="screen">
+{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+<table>
+    <tr>
+        <th>Email</th>
+        <th>Actions</th>
+    </tr>
+    {% for user in users %}
+    <tr>
+        <td>{{ user.email }}</td>
+        <td><a href="{% url 'main:user_details' user.id %}">View Details</a></td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

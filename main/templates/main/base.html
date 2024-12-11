@@ -1,0 +1,23 @@
+{% load static %}
+<!DOCTYPE html>
+<html style="font-size: 16px;" lang="ru">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <title>KehoSense</title>
+    {% block extra_css %}
+    {% endblock %}
+    <meta name="theme-color" content="#b07afe">
+    <meta property="og:title" content="home">
+    <meta property="og:type" content="website">
+    <meta data-intl-tel-input-cdn-path="intlTelInput/">
+</head>
+<body class="u-body u-xl-mode" data-lang="ru">
+{% include 'main/includes/header.html' %}
+{% block content %}
+{% endblock %}
+{% block extra_js %}
+{% endblock %}
+{% include 'main/includes/footer.html' %}
+</body>
+</html>

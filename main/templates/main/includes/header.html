@@ -1,0 +1,28 @@
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'main/css/main_header.css' %}">
+{% endblock %}
+<header>
+    <div class="header-content">
+        <div class="logo">
+            <a href="{% url 'main:dashboard' %}">
+                <span>KehoSense</span>
+            </a>
+        </div>
+        <nav>
+            <ul>
+                <li>
+                    <a href="{% url 'main:dashboard' %}" class="{% if request.path == '/' %}active{% endif %}">dashboard</a>
+                </li>
+                <li>
+                    <a href="{% url 'users:profile' %}" class="{% if request.path == '/mission/' %}active{% endif %}">user profile</a>
+                </li>
+            </ul>
+        </nav>
+        <div class="auth-buttons">
+            <a href="{% url 'users:login' %}">
+                <button class="auth-btn">Login</button>
+            </a>
+        </div>
+    </div>
+</header>

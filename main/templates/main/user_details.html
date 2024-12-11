@@ -1,0 +1,24 @@
+{% extends 'main/base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'main/css/user_details.css' %}" media="screen">
+{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Details for {{ user.email }}</h1>
+
+    <div class="map-container">
+        <div id="map">{{ map_html|safe }}</div>
+    </div>
+
+
+    <div class="chart-container">
+        <canvas id="temperatureChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'main/js/map-and-graph.js' %}"></script>
+{% endblock %}
