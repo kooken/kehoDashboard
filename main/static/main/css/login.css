@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap');
 
-h1 {
+h2 {
     text-align: center;
     background-color: #F9FCF8;
     font-family: 'Raleway', sans-serif;
@@ -11,31 +11,7 @@ h1 {
     margin-bottom: 0;
 }
 
-table {
-    width: 1200px;
-    border-collapse: collapse;
-    font-family: 'Raleway', sans-serif;
-    color: #0a1005;
-    margin: 20px auto;
-    font-size: 18px;
-    text-align: center;
-    text-decoration: none;
-}
-
-th, td {
-    border: 1px solid #0a1005;
-    padding: 8px;
-}
-
-th {
-    background-color: #F9FCF8;
-}
-
-tr:hover {
-    background-color: #d6bfff;
-}
-
-.dates-form {
+.login-form {
     margin: 30px auto;
     background-color: #F9FCF8;
     font-family: 'Raleway', sans-serif;
@@ -46,7 +22,7 @@ tr:hover {
     max-width: 400px;
 }
 
-.dates-form h2 {
+.login-form h2 {
     font-family: 'Raleway', sans-serif;
     text-align: center;
     font-size: 28px;
@@ -54,18 +30,18 @@ tr:hover {
     margin-bottom: 20px;
 }
 
-.dates-form .form-group {
+.login-form .form-group {
     font-family: 'Raleway', sans-serif;
     margin-bottom: 20px;
 }
 
-.dates-form .form-label {
+.login-form .form-label {
     font-size: 16px;
     font-weight: 600;
     color: #0A1005;
 }
 
-.dates-form input {
+.login-form input {
     font-family: 'Raleway', sans-serif;
     width: 100%;
     padding: 12px;
@@ -77,19 +53,19 @@ tr:hover {
     box-sizing: border-box;
 }
 
-.dates-form input:focus {
+.login-form input:focus {
     border-color: #1EB32D;
     outline: none;
     box-shadow: 0 0 8px rgba(30, 179, 45, 0.5);
 }
 
-.dates-form input:hover {
+.login-form input:hover {
     border-color: #1EB32D;
     outline: none;
     box-shadow: 0 0 8px rgba(30, 179, 45, 0.5);
 }
 
-.dates-form .btn-filter {
+.login-form .btn-login {
     background-color: #78C837;
     color: #0A1005;
     font-size: 16px;
@@ -103,7 +79,7 @@ tr:hover {
     text-align: center;
 }
 
-.dates-form .btn-filter:hover {
+.login-form .btn-login:hover {
     background-color: #0A1005;
     color: #78C837;
     font-weight: bold;

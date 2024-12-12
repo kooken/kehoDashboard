@@ -4,7 +4,7 @@ from users.models import User
 
 class Telemetry(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="telemetry")
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(null=True, blank=True)
     latitude = models.FloatField()
     longitude = models.FloatField()
     ambient_temperature = models.FloatField()

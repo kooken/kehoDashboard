@@ -5,16 +5,47 @@
 {% endblock %}
 {% block content %}
 <h1>Dashboard</h1>
-<h1>Users</h1>
+<form method="get" action="" class="dates-form">
+    <h2>Choose dates</h2>
+    <input type="date" name="date_from" value="{{ date_from|default:'' }}" required>
+    <input type="date" name="date_to" value="{{ date_to|default:'' }}" required>
+    <button type="submit" class="btn-filter">Filter</button>
+</form>
+
 <table>
     <tr>
+        <th>#</th>
         <th>Email</th>
-        <th>Actions</th>
+        <th>Status</th>
+        <th>Action</th>
     </tr>
     {% for user in users %}
     <tr>
+        <td>{{ forloop.counter }}</td>
         <td>{{ user.email }}</td>
-        <td><a href="{% url 'main:user_details' user.id %}">View Details</a></td>
+        <td>
+            {% if date_from and date_to %}
+            {% if user.telemetry_filtered.exists %}
+            ✔ Data found
+            {% else %}
+            ✖ Data not found
+            {% endif %}
+            {% else %}
+            No filter applied
+            {% endif %}
+        </td>
+        <td>
+            {% if date_from and date_to %}
+            {% if user.telemetry_filtered.exists %}
+            <a href="{% url 'main:user_details' user.id %}?date_from={{ date_from|date:" Y-m-d" }}&date_to={{
+            date_to|date:"Y-m-d" }}">View Details</a>
+            {% else %}
+            No data found
+            {% endif %}
+            {% else %}
+            No filter applied
+            {% endif %}
+        </td>
     </tr>
     {% endfor %}
 </table>

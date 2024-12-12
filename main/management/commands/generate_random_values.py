@@ -1,8 +1,9 @@
 import random
 from django.core.management.base import BaseCommand
-from django.utils.timezone import now, timedelta
+from django.utils import timezone
 from main.models import User, Telemetry
 import geopy.distance
+from dateutil.relativedelta import relativedelta
 
 
 class Command(BaseCommand):
@@ -19,13 +20,17 @@ class Command(BaseCommand):
 
         step_distance = total_distance / num_points
 
-        start_time = now()
+        start_time = timezone.now()
 
         for i in range(num_points):
             new_coords = self.generate_next_coords(latitude, longitude, step_distance)
             latitude, longitude = new_coords
 
-            timestamp = start_time + timedelta(minutes=i * (60 // num_points))
+            timestamp = start_time + relativedelta(minutes=5 * i)
+            print("Current timestamp is:", timestamp)
+
+            timestamp = timestamp.replace(microsecond=0)
+            print("Updated timestamp is:", timestamp)
 
             Telemetry.objects.create(
                 user=user,
@@ -36,15 +41,14 @@ class Command(BaseCommand):
                 thermostat_current_temperature=random.uniform(18, 24),
                 timestamp=timestamp
             )
+            print("Current telemetry object is:", Telemetry)
 
         self.stdout.write(self.style.SUCCESS("Successfully generated fake telemetry data!"))
 
     def generate_next_coords(self, latitude, longitude, step_distance_km):
         angle = random.uniform(0, 360)
 
-        distance = step_distance_km
-
         origin = (latitude, longitude)
-        destination = geopy.distance.distance(kilometers=distance).destination(origin, angle)
+        destination = geopy.distance.distance(kilometers=step_distance_km).destination(origin, angle)
 
         return destination.latitude, destination.longitude
