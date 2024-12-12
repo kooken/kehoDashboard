@@ -1,21 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&family=Rubik+Doodle+Shadow&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap');
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-}
-
-body {
-    font-family: Ral, sans-serif;
+    background-color: #F9FCF8;
 }
 
 header {
     position: sticky;
     top: 0;
-    background-color: white;
+    background-color: #F9FCF8;
     padding: 10px 20px;
-    border-bottom: 3px solid #b07afe;
+    border-bottom: 3px solid #7AC839;
     z-index: 1000;
 }
 
@@ -27,72 +24,38 @@ header {
     margin: 0 auto;
 }
 
-nav ul {
-    display: flex;
-    list-style: none;
-}
-
-nav ul li {
-    margin: 0 15px;
-}
-
-nav ul li a {
-    text-decoration: none;
-    color: black;
-    font-weight: bold;
-    font-family: 'Raleway', sans-serif;
-    font-size: 16px;
-}
-
-nav ul li a:hover {
-    text-decoration: none;
-    color: #b07afe;
-    font-weight: bold;
-    font-family: 'Raleway', sans-serif;
-    font-size: 16px;
-}
-
-nav a.active {
-    color: #b07afe;
-    font-weight: bold;
-}
-
-.auth-buttons {
-    display: flex;
-}
-
-.auth-btn {
-    background-color: #b07afe;
-    color: black;
-    border: none;
-    font-weight: bold;
-    font-family: 'Raleway', sans-serif;
-    font-size: 16px;
-    border-radius: 4px;
-    padding: 8px 16px;
-    margin-left: 10px;
-    cursor: pointer;
-}
-
-.auth-btn:hover {
-    background-color: black;
-    color: #b07afe;
-    font-weight: bold;
-}
-
 .logo a {
     text-decoration: none;
     color: inherit;
 }
 
 .logo span {
-    font-family: 'Rubik Doodle Shadow';
+    font-family: "Chakra Petch", sans-serif;
     font-size: 36px;
-    color: black;
+    color: #0A1005;
 }
 
 .logo span:hover {
-    font-family: 'Rubik Doodle Shadow';
+    font-family: "Chakra Petch", sans-serif;
     font-size: 36px;
-    color: #b07afe;
+    color: #7AC839;
 }
+
+.menu a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.menu {
+    font-family: "Chakra Petch", sans-serif;
+    font-size: 20px;
+    color: #0A1005;
+}
+
+.menu:hover,
+.menu:focus {
+    font-family: "Chakra Petch", sans-serif;
+    font-size: 20px;
+    color: #7AC839;
+}
+

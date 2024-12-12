@@ -13,3 +13,10 @@ class Telemetry(models.Model):
 
     def __str__(self):
         return f"Telemetry for {self.user.email} at {self.timestamp}"
+
+
+class LoginPassword(models.Model):
+    password = models.CharField(max_length=10, unique=True)
+
+    def __str__(self):
+        return self.password

@@ -1,10 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&family=Rubik+Doodle+Shadow&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap');
 
 h1 {
     text-align: center;
-    background-color: white;
+    background-color: #F9FCF8;
     font-family: 'Raleway', sans-serif;
-    color: #b07afe;
+    color: #0a1005;
     padding: 20px 0px;
     font-size: 24px;
     font-weight: bold;
@@ -15,20 +15,20 @@ table {
     width: 1200px;
     border-collapse: collapse;
     font-family: 'Raleway', sans-serif;
-    color: black;
+    color: #0a1005;
     margin: 20px auto;
     font-size: 18px;
     text-align: center;
-    box-shadow: 0 0 5px rgba(176, 122, 254, 0.5);
+    text-decoration: none;
 }
 
 th, td {
-    border: 1px solid #b07afe;
+    border: 1px solid #0a1005;
     padding: 8px;
 }
 
 th {
-    background-color: #ffffff;
+    background-color: #F9FCF8;
 }
 
 tr:hover {

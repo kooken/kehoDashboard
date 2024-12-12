@@ -11,7 +11,6 @@
         <div id="map">{{ map_html|safe }}</div>
     </div>
 
-
     <div class="chart-container">
         <canvas id="temperatureChart"></canvas>
     </div>
@@ -20,5 +19,138 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="{% static 'main/js/map-and-graph.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+<script>
+    const telemetry = {{ coordinates|safe }};
+    const markers = {{ markers|safe }};
+    markers.forEach((marker, index) => {
+        const markerHtml = `<div id="marker-${index}" data-index="${index}">Marker ${index}</div>`;
+        document.body.innerHTML += markerHtml;  // Выводим маркеры на страницу для отладки
+    });
+
+    const ctx = document.getElementById('temperatureChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: telemetry.map(c => c.timestamp),
+            datasets: [
+                {
+                    label: 'Ambient',
+                    data: telemetry.map(c => c.ambient_temperature),
+                    borderColor: 'blue',
+                    backgroundColor: 'blue',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'blue',
+                    pointBorderColor: 'blue',
+                    tension: 0.4,
+                    fill: false,
+                },
+                {
+                    label: 'Target',
+                    data: telemetry.map(c => c.target_temperature),
+                    borderColor: 'green',
+                    backgroundColor: 'green',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'green',
+                    pointBorderColor: 'green',
+                    tension: 0.4,
+                    fill: false,
+                },
+                {
+                    label: 'Current',
+                    data: telemetry.map(c => c.current_temperature),
+                    borderColor: 'red',
+                    backgroundColor: 'red',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'red',
+                    pointBorderColor: 'red',
+                    tension: 0.4,
+                    fill: false,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Timestamp',
+                    },
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Temperature (°C)',
+                    },
+                },
+            },
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#0a1005',
+                    },
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.raw !== null) {
+                                label += context.raw.toFixed(2) + '°C';
+                            }
+                            return label;
+                        },
+                    },
+                },
+                annotation: {
+                    annotations: []
+                }
+            },
+        },
+    });
+
+    // Функция для выделения сегмента на графике с полупрозрачным прямоугольником
+    function highlightChartSegment(startIndex, endIndex) {
+        console.log(`Highlighting segment from ${startIndex} to ${endIndex}`);
+
+        // Вычисляем половины точек A и C
+        const midpointA = Math.floor(startIndex + (endIndex - startIndex) / 2);
+
+        // Добавляем аннотацию
+        chart.options.plugins.annotation.annotations = [{
+            type: 'box',
+            xMin: chart.data.labels[startIndex],
+            xMax: chart.data.labels[endIndex],
+            yMin: Math.min(...chart.data.datasets.map(d => Math.min(...d.data))),
+            yMax: Math.max(...chart.data.datasets.map(d => Math.max(...d.data))),
+            backgroundColor: 'rgba(255, 99, 132, 0.3)', // Полупрозрачный красный
+            borderColor: 'rgba(255, 99, 132, 0.8)',   // Красивая граница
+            borderWidth: 2
+        }];
+
+        chart.update();
+        console.log('Chart updated with highlighted segment');
+    }
+
+    // Добавление обработчиков кликов на маркеры карты
+    window.onload = function() {
+        markers.forEach((marker, index) => {
+            const markerElement = document.getElementById(`marker-${index}`);  // Используем уникальный ID для поиска маркера
+            console.log(`Searching for marker with index ${index}:`, markerElement);
+
+            if (markerElement) {
+                markerElement.addEventListener('click', () => {
+                    console.log(`Marker clicked at index: ${index}`);
+                    const prevIndex = Math.max(index - 1, 0);
+                    const nextIndex = Math.min(index + 1, telemetry.length - 1);
+                    highlightChartSegment(prevIndex, nextIndex);
+                });
+            }
+        });
+    };
+</script>
 {% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'main/base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'main/css/dashboard.css' %}" media="screen">
+{% endblock %}
+{% block content %}
+<h2>Login</h2>
+{% if error %}
+<p style="color: red;">{{ error }}</p>
+{% endif %}
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Login</button>
+</form>
+{% endblock %}

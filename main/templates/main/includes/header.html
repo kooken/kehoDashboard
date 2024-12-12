@@ -9,20 +9,8 @@
                 <span>KehoSense</span>
             </a>
         </div>
-        <nav>
-            <ul>
-                <li>
-                    <a href="{% url 'main:dashboard' %}" class="{% if request.path == '/' %}active{% endif %}">dashboard</a>
-                </li>
-                <li>
-                    <a href="{% url 'users:profile' %}" class="{% if request.path == '/mission/' %}active{% endif %}">user profile</a>
-                </li>
-            </ul>
-        </nav>
-        <div class="auth-buttons">
-            <a href="{% url 'users:login' %}">
-                <button class="auth-btn">Login</button>
-            </a>
+        <div class="menu">
+            <a href="{% url 'main:dashboard' %}" class="{% if request.path == '/' %}active{% endif %}">dashboard</a>
         </div>
     </div>
 </header>
