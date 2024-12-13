@@ -5,14 +5,35 @@
 {% endblock %}
 {% block content %}
 <div class="container">
-    <h1>Details for {{ user.email }}</h1>
-
-    <div class="map-container">
-        <div id="map">{{ map_html|safe }}</div>
+    <!-- Row 1: User details -->
+    <div class="row">
+        <div class="column">
+            <h1>Details for {{ user.email }}</h1>
+            <h1>Period from {{ date_from|date:"d M Y H:i" }} to {{ date_to|date:"d M Y H:i" }}</h1>
+        </div>
     </div>
 
-    <div class="chart-container">
-        <canvas id="temperatureChart"></canvas>
+    <!-- Row 2: Map and Chart side by side -->
+    <div class="row">
+        <div class="column map-container">
+            <div id="map">{{ map_html|safe }}</div>
+        </div>
+        <div class="column chart-container">
+            <canvas id="temperatureChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Row 3: Average temperatures -->
+    <div class="row">
+        <div class="column">
+            <p><strong>Average Ambient Temperature:</strong> {{ average_ambient_temperature }}°C</p>
+        </div>
+        <div class="column">
+            <p><strong>Average Target Temperature:</strong> {{ average_target_temperature }}°C</p>
+        </div>
+        <div class="column">
+            <p><strong>Average Current Temperature:</strong> {{ average_current_temperature }}°C</p>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -21,136 +42,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
 <script>
-    const telemetry = {{ coordinates|safe }};
-    const markers = {{ markers|safe }};
-    const ctx = document.getElementById('temperatureChart').getContext('2d');
-    const chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: telemetry.map(c => c.timestamp),
-            datasets: [
-                {
-                    label: 'Ambient',
-                    data: telemetry.map(c => c.ambient_temperature),
-                    borderColor: 'blue',
-                    backgroundColor: 'blue',
-                    borderWidth: 2,
-                    pointBackgroundColor: 'blue',
-                    pointBorderColor: 'blue',
-                    tension: 0.4,
-                    fill: false,
-                },
-                {
-                    label: 'Target',
-                    data: telemetry.map(c => c.target_temperature),
-                    borderColor: 'green',
-                    backgroundColor: 'green',
-                    borderWidth: 2,
-                    pointBackgroundColor: 'green',
-                    pointBorderColor: 'green',
-                    tension: 0.4,
-                    fill: false,
-                },
-                {
-                    label: 'Current',
-                    data: telemetry.map(c => c.current_temperature),
-                    borderColor: 'red',
-                    backgroundColor: 'red',
-                    borderWidth: 2,
-                    pointBackgroundColor: 'red',
-                    pointBorderColor: 'red',
-                    tension: 0.4,
-                    fill: false,
-                },
-            ],
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Timestamp',
-                    },
-                },
-                y: {
-                    title: {
-                        display: true,
-                        text: 'Temperature (°C)',
-                    },
-                },
-            },
-            plugins: {
-                legend: {
-                    labels: {
-                        color: '#0a1005',
-                    },
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            if (context.raw !== null) {
-                                label += context.raw.toFixed(2) + '°C';
-                            }
-                            return label;
-                        },
-                    },
-                },
-                annotation: {
-                    annotations: []
-                }
-            },
-        },
-    });
-
-function highlightChartSegment(startIndex, endIndex) {
-    console.log(`Highlighting segment from ${startIndex} to ${endIndex}`);
-
-    const xMin = startIndex === 0
-        ? chart.data.labels[startIndex]
-        : (new Date(chart.data.labels[startIndex - 1]).getTime() + new Date(chart.data.labels[startIndex]).getTime()) / 2;
-
-    const xMax = endIndex === chart.data.labels.length - 1
-        ? chart.data.labels[endIndex]
-        : (new Date(chart.data.labels[endIndex]).getTime() + new Date(chart.data.labels[endIndex + 1]).getTime()) / 2;
-
-    const xMinDate = startIndex === 0 ? chart.data.labels[startIndex] : new Date(xMin).toISOString();
-    const xMaxDate = endIndex === chart.data.labels.length - 1 ? chart.data.labels[endIndex] : new Date(xMax).toISOString();
-
-    chart.options.plugins.annotation.annotations = [];
-
-    chart.options.plugins.annotation.annotations.push({
-        type: 'box',
-        xMin: xMinDate,
-        xMax: xMaxDate,
-        yMin: Math.min(...chart.data.datasets.map(d => Math.min(...d.data))),
-        yMax: Math.max(...chart.data.datasets.map(d => Math.max(...d.data))),
-        backgroundColor: 'rgba(255, 99, 132, 0.3)', // Полупрозрачный красный
-        borderColor: 'rgba(255, 99, 132, 0.8)',    // Красная граница
-        borderWidth: 2,
-    });
-
-    chart.update();
-    console.log(`Chart updated with highlighted segment: ${xMinDate} to ${xMaxDate}`);
-}
-
-window.onload = function () {
-    markers.forEach((marker, index) => {
-        const markerElement = document.getElementById(`marker-${index}`);
-        if (markerElement) {
-            markerElement.addEventListener('click', () => {
-                console.log(`Marker clicked at index: ${index}`);
-                const prevIndex = Math.max(index - 1, 0);
-                const nextIndex = Math.min(index + 1, telemetry.length - 1);
-                highlightChartSegment(prevIndex, nextIndex);
-            });
-        }
-    });
-};
+    var telemetry = JSON.parse('{{ markers|escapejs }}');
 </script>
+<script src="{% static 'main/js/map-and-graph.js' %}"></script>
 {% endblock %}

@@ -1,4 +1,7 @@
+import json
 from datetime import datetime
+
+from django.db.models import Avg
 from django.shortcuts import render, get_object_or_404, redirect
 import folium
 from django.utils import timezone
@@ -52,8 +55,12 @@ def login_view(request):
 def dashboard(request):
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
+    print("Date from is", date_from)
+    print("Date to is", date_to)
 
     date_from, date_to = process_dates(date_from, date_to)
+    print("Date from processed is", date_from)
+    print("Date to processed is", date_to)
 
     users = User.objects.all()
 
@@ -71,11 +78,14 @@ def dashboard(request):
 @login_required
 def user_details(request, user_id):
     user = get_object_or_404(User, id=user_id)
-
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
+    print("Date from is", date_from)
+    print("Date to is", date_to)
 
     date_from, date_to = process_dates(date_from, date_to)
+    print("Date from processed is", date_from)
+    print("Date to processed is", date_to)
 
     telemetry = user.telemetry.all()
     if date_from and date_to:
@@ -83,6 +93,12 @@ def user_details(request, user_id):
             timestamp__gte=date_from,
             timestamp__lte=date_to
         )
+
+    average_ambient_temperature = telemetry.aggregate(Avg('ambient_temperature'))['ambient_temperature__avg'] or 0
+    average_target_temperature = telemetry.aggregate(Avg('thermostat_target_temperature'))[
+                                     'thermostat_target_temperature__avg'] or 0
+    average_current_temperature = telemetry.aggregate(Avg('thermostat_current_temperature'))[
+                                      'thermostat_current_temperature__avg'] or 0
 
     coordinates = [
         {
@@ -106,7 +122,8 @@ def user_details(request, user_id):
     markers = []
     for i, data in enumerate(telemetry):
         popup_content = f"""
-        <div style="font-family: 'Raleway', sans-serif; font-size: 14px; color: #0a1005;">
+        <div style="@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;600)
+        font-family: 'Raleway', sans-serif; font-size: 14px; color: #0a1005;">
             <strong>Time:</strong> {data.timestamp.strftime("%Y-%m-%d %H:%M")}<br>
             <strong>Ambient Temp:</strong> {data.ambient_temperature:.2f}°C<br>
             <strong>Target Temp:</strong> {data.thermostat_target_temperature:.2f}°C<br>
@@ -144,10 +161,13 @@ def user_details(request, user_id):
         'user': user,
         'telemetry': telemetry,
         'map_html': map_html,
-        'coordinates': coordinates,
+        'coordinates': json.dumps(coordinates),
         'date_from': date_from,
         'date_to': date_to,
-        'markers': markers,
+        'markers': json.dumps(markers),
+        'average_ambient_temperature': round(average_ambient_temperature, 2),
+        'average_target_temperature': round(average_target_temperature, 2),
+        'average_current_temperature': round(average_current_temperature, 2),
     })
 
 
