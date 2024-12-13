@@ -5,7 +5,6 @@
 {% endblock %}
 {% block content %}
 <div class="container">
-    <!-- Row 1: User details -->
     <div class="row">
         <div class="column">
             <h1>Details for {{ user.email }}</h1>
@@ -13,7 +12,6 @@
         </div>
     </div>
 
-    <!-- Row 2: Map and Chart side by side -->
     <div class="row">
         <div class="column map-container">
             <div id="map">{{ map_html|safe }}</div>
@@ -23,16 +21,18 @@
         </div>
     </div>
 
-    <!-- Row 3: Average temperatures -->
     <div class="row">
         <div class="column">
-            <p><strong>Average Ambient Temperature:</strong> {{ average_ambient_temperature }}°C</p>
+            <p><strong>Average Ambient Temperature:</strong></p>
+            <p>{{ average_ambient_temperature }} ± {{ stddev_ambient_temperature }}°C</p>
         </div>
         <div class="column">
-            <p><strong>Average Target Temperature:</strong> {{ average_target_temperature }}°C</p>
+            <p><strong>Average Target Temperature:</strong></p>
+            <p>{{ average_target_temperature }} ± {{ stddev_target_temperature }}°C</p>
         </div>
         <div class="column">
-            <p><strong>Average Current Temperature:</strong> {{ average_current_temperature }}°C</p>
+            <p><strong>Average Current Temperature:</strong></p>
+            <p>{{ average_current_temperature }} ± {{ stddev_current_temperature }}°C</p>
         </div>
     </div>
 </div>

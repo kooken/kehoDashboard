@@ -1,7 +1,6 @@
 import json
 from datetime import datetime
-
-from django.db.models import Avg
+from django.db.models import Avg, StdDev
 from django.shortcuts import render, get_object_or_404, redirect
 import folium
 from django.utils import timezone
@@ -100,6 +99,12 @@ def user_details(request, user_id):
     average_current_temperature = telemetry.aggregate(Avg('thermostat_current_temperature'))[
                                       'thermostat_current_temperature__avg'] or 0
 
+    stddev_ambient_temperature = telemetry.aggregate(StdDev('ambient_temperature'))['ambient_temperature__stddev'] or 0
+    stddev_target_temperature = telemetry.aggregate(StdDev('thermostat_target_temperature'))[
+                                    'thermostat_target_temperature__stddev'] or 0
+    stddev_current_temperature = telemetry.aggregate(StdDev('thermostat_current_temperature'))[
+                                     'thermostat_current_temperature__stddev'] or 0
+
     coordinates = [
         {
             "latitude": data.latitude,
@@ -109,8 +114,10 @@ def user_details(request, user_id):
             "target_temperature": round(data.thermostat_target_temperature, 2),
             "current_temperature": round(data.thermostat_current_temperature, 2),
         }
-        for data in telemetry
+        for data in sorted(telemetry, key=lambda x: x.timestamp)
     ]
+
+    print("Coordinates are:", coordinates)
 
     if telemetry.exists():
         initial_location = [telemetry.first().latitude, telemetry.first().longitude]
@@ -120,10 +127,13 @@ def user_details(request, user_id):
     map_folium = folium.Map(location=initial_location, zoom_start=13)
     points = []
     markers = []
-    for i, data in enumerate(telemetry):
+    sorted_telemetry = sorted(telemetry, key=lambda x: x.timestamp)
+    for i, data in enumerate(sorted_telemetry, start=1):
         popup_content = f"""
-        <div style="@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;600)
-        font-family: 'Raleway', sans-serif; font-size: 14px; color: #0a1005;">
+        <head>
+            <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+        </head>
+        <div style="font-family: 'Raleway', sans-serif; font-size: 14px; color: #0a1005;">
             <strong>Time:</strong> {data.timestamp.strftime("%Y-%m-%d %H:%M")}<br>
             <strong>Ambient Temp:</strong> {data.ambient_temperature:.2f}°C<br>
             <strong>Target Temp:</strong> {data.thermostat_target_temperature:.2f}°C<br>
@@ -138,6 +148,18 @@ def user_details(request, user_id):
             fill_color="#1EB32D",
             fill_opacity=0.7,
             popup=folium.Popup(popup_content, max_width=300),
+        ).add_to(map_folium)
+
+        folium.map.Marker(
+            [data.latitude, data.longitude],
+            icon=folium.DivIcon(
+                html=f"""
+                <head>
+                    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+                </head>
+                <div style="font-family: 'Raleway', sans-serif; font-size: 14px; font-weight: bold; color: black; text-align: center;">{i}</div>
+                """
+            )
         ).add_to(map_folium)
 
         markers.append({
@@ -168,6 +190,9 @@ def user_details(request, user_id):
         'average_ambient_temperature': round(average_ambient_temperature, 2),
         'average_target_temperature': round(average_target_temperature, 2),
         'average_current_temperature': round(average_current_temperature, 2),
+        'stddev_ambient_temperature': round(stddev_ambient_temperature, 2),
+        'stddev_target_temperature': round(stddev_target_temperature, 2),
+        'stddev_current_temperature': round(stddev_current_temperature, 2),
     })
 
 

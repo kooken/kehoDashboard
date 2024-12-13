@@ -9,7 +9,7 @@ from dateutil.relativedelta import relativedelta
 class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
-        user, created = User.objects.get_or_create(email='msazhina23@gmail.com')
+        user, created = User.objects.get_or_create(email='test@mail.com')
 
         if created:
             self.stdout.write(self.style.SUCCESS(f"Created user with email {user.email}"))

@@ -13,6 +13,7 @@
 h1 {
     font-family: 'Raleway', sans-serif;
     color: #0a1005;
+    font-size: 20px;
     align-items: center;
     text-align: center;
 }
@@ -39,7 +40,6 @@ h1 {
 
 .column {
     flex: 1;
-    min-width: 400px;
     justify-content: center;
     align-items: center;
 }
@@ -58,20 +58,4 @@ h1 {
     .map-container, .chart-container {
         margin-bottom: 20px;
     }
-}
-
-.leaflet-popup-content {
-    font-family: 'Raleway', sans-serif; /* Измените на нужный шрифт */
-    font-size: 14px;               /* Размер шрифта */
-    color: #0a1005;                   /* Цвет текста */
-}
-
-.leaflet-popup-content-wrapper {
-    background-color: #f9f9f9;     /* Цвет фона */
-    border-radius: 8px;            /* Скругленные углы */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Тень */
-}
-
-.leaflet-popup-tip {
-    background-color: #f9f9f9;     /* Цвет треугольника */
 }
