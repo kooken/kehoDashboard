@@ -20,3 +20,15 @@ class LoginPassword(models.Model):
 
     def __str__(self):
         return self.password
+
+
+class WeatherForecast(models.Model):
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    temperature = models.FloatField(null=True, blank=True)
+    humidity = models.FloatField(null=True, blank=True)
+    weather_description = models.CharField(max_length=255, null=True, blank=True)
+    forecast_time = models.DateTimeField()
+
+    def __str__(self):
+        return f"Weather at ({self.latitude}, {self.longitude}) on {self.forecast_time}"
