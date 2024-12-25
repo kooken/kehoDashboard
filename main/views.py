@@ -1,12 +1,19 @@
 import json
 from datetime import datetime
+
+import requests
 from django.db.models import Avg, StdDev
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 import folium
 from django.utils import timezone
+from django.utils.timezone import now
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.response import Response
-from .models import User
-from rest_framework import viewsets
+from rest_framework.views import APIView
+
+from .models import User, Telemetry, WeatherData
+from rest_framework import viewsets, serializers, status
 from .serializers import TelemetrySerializer
 from main.models import LoginPassword
 from main.forms import LoginForm
@@ -179,6 +186,8 @@ def user_details(request, user_id):
 
     map_html = map_folium._repr_html_()
 
+    current_weather = WeatherData.objects.order_by('-last_updated').first()
+
     return render(request, 'main/user_details.html', {
         'user': user,
         'telemetry': telemetry,
@@ -193,24 +202,120 @@ def user_details(request, user_id):
         'stddev_ambient_temperature': round(stddev_ambient_temperature, 2),
         'stddev_target_temperature': round(stddev_target_temperature, 2),
         'stddev_current_temperature': round(stddev_current_temperature, 2),
+        'current_weather': current_weather,
     })
 
 
-class TelemetryViewSet(viewsets.ViewSet):
-    def create(self, request):
-        email = request.data.get('email')
-        user, _ = User.objects.get_or_create(email=email)
+class ClientDataView(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = TelemetryDataSerializer(data=request.query_params)
+        if serializer.is_valid():
+            data = serializer.validated_data
 
-        telemetry_data = {
-            'user': user.id,
-            'latitude': request.data.get('latitude'),
-            'longitude': request.data.get('longitude'),
-            'ambient_temperature': request.data.get('ambient_temperature'),
-            'thermostat_target_temperature': request.data.get('thermostat_target_temperature'),
-            'thermostat_current_temperature': request.data.get('thermostat_current_temperature'),
-        }
+            Telemetry.objects.create(
+                user_id=data['client_id'],
+                timestamp=data['first_time'],
+                latitude=data['first_lat'],
+                longitude=data['first_long'],
+                ambient_temperature=data['first_ambT'],
+                thermostat_current_temperature=data['first_curT'],
+                thermostat_target_temperature=data['first_trgT'],
+            )
 
-        serializer = TelemetrySerializer(data=telemetry_data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({"status": "success", "data": serializer.data})
+            for telemetry in data['d']:
+                d_time, d_lat, d_long, ambT, curT, trgT = map(float, telemetry.split(","))
+                Telemetry.objects.create(
+                    user_id=data['client_id'],
+                    timestamp=d_time,
+                    latitude=d_lat,
+                    longitude=d_long,
+                    ambient_temperature=ambT,
+                    thermostat_current_temperature=curT,
+                    thermostat_target_temperature=trgT,
+                )
+
+            weather_data = WeatherData.objects.order_by('-last_updated').first()
+
+            if weather_data:
+                response_data = {
+                    "curT": weather_data.temperature,
+                    "condition": weather_data.condition
+                }
+            else:
+                response_data = {
+                    "curT": 0,
+                    "condition": "Unknown"
+                }
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+def fetch_weather():
+    response = requests.get(
+        'https://api.weatherapi.com/v1/current.json',
+        params={'key': '17984325ba0f4898b36113347242512', 'q': 'Helsinki', 'lang': 'ru'}
+    )
+    data = response.json()
+    WeatherData.objects.create(
+        location=data['location']['name'],
+        temperature=data['current']['temp_c'],
+        condition=data['current']['condition']['text'],
+        last_updated=now()
+    )
+
+
+class TelemetryDataSerializer(serializers.Serializer):
+    client_id = serializers.CharField(max_length=255)
+    first_time = serializers.DateTimeField()
+    first_lat = serializers.FloatField()
+    first_long = serializers.FloatField()
+    first_ambT = serializers.FloatField()
+    first_curT = serializers.FloatField()
+    first_trgT = serializers.FloatField()
+    d = serializers.ListField(
+        child=serializers.CharField(max_length=255)
+    )
+
+
+# def exchange_data(request):
+#     if request.method == 'POST':
+#         data = json.loads(request.body)
+#         telemetry = Telemetry.objects.create(
+#             latitude=data.get('first_lat'),
+#             longitude=data.get('first_long'),
+#             timestamp=data.get('first_time'),
+#             ambient_temperature=data.get('first_ambT'),
+#             thermostat_target_temperature=data.get('first_trgT'),
+#             thermostat_current_temperature=data.get('first_curT'),
+#         )
+#
+#         latest_weather = WeatherData.objects.latest('last_updated')
+#         response_data = {
+#             "curT": latest_weather.temperature,
+#             "condition": latest_weather.condition
+#         }
+#         return JsonResponse(response_data, status=200)
+#
+#     return JsonResponse({"error": "Invalid method"}, status=400)
+
+
+# class TelemetryViewSet(viewsets.ViewSet):
+#     def create(self, request):
+#         email = request.data.get('email')
+#         user, _ = User.objects.get_or_create(email=email)
+#
+#         telemetry_data = {
+#             'user': user.id,
+#             'latitude': request.data.get('latitude'),
+#             'longitude': request.data.get('longitude'),
+#             'ambient_temperature': request.data.get('ambient_temperature'),
+#             'thermostat_target_temperature': request.data.get('thermostat_target_temperature'),
+#             'thermostat_current_temperature': request.data.get('thermostat_current_temperature'),
+#         }
+#
+#         serializer = TelemetrySerializer(data=telemetry_data)
+#         serializer.is_valid(raise_exception=True)
+#         serializer.save()
+#         return Response({"status": "success", "data": serializer.data})

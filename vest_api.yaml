@@ -1,0 +1,126 @@
+openapi: "3.0.3"
+info:
+  title: Vest API Title
+  version: "1.0"
+servers:
+  - url: http://127.0.0.1/v1
+paths:
+  /clients_data:
+    post:
+      summary: "Telemetric data to server, wether data from server."
+      operationId: postClienData
+      parameters:
+        - name: client_id
+          description: "Vest, sensor address XX_XX_XX_XX_XX_XX__XX_XX_XX_XX_XX_XX"
+          in: query
+          required: true
+          schema:
+            type: string
+            example: XX_XX_XX_XX_XX_XX__XX_XX_XX_XX_XX_XX
+        - name: first_time
+          description: "Время первого отсчета"
+          in: query
+          required: true
+          schema:
+            type: string
+            example: 1969-07-20 20:18:04
+        - name: first_lat
+          description: "Первая широта"
+          in: query
+          required: true
+          schema:
+            type: string
+            example: 54.123456
+        - name: first_long
+          description: "Первая долгота"
+          in: query
+          required: true
+          schema:
+            type: string
+            example: 23.123456    
+        - name: first_ambT
+          description: "Первая окружающая температура"
+          in: query
+          required: true
+          schema:
+            type: string
+            example: 12.1       
+        - name: first_curT
+          description: "Первая текущая температура"
+          in: query
+          required: true
+          schema:
+            type: string
+            example: 29.1 
+        - name: first_trgT
+          description: "Первая целевая температура"
+          in: query
+          required: true
+          schema:
+            type: string
+            example: 36.1                                                               
+        # - name: telemetry
+        #   description: "Array of telemetry from client"
+        #   in: query
+        #   required: false
+        #   schema:
+        #     type: array
+        #     items:
+        #       type: array
+        #       properties:
+        #         dT:
+        #           type: integer
+            # type: array
+            # items:
+            #   type: object
+            #   required:
+            #     - dT
+            #     - long
+            #   properties:
+            #     dT:
+            #       type: integer
+            #     long:
+            #       type: string
+        - name: d
+          in: query
+          description: "Array of telemetry from client dTime, dLat, dLong, ambT, curT, targT"
+          required: true    
+          schema:
+            type: array
+            items:
+              type: string
+              example: 000, 111, 222, 333, 444, 555 #["str1", "str2", "str3"]            
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                type: array
+                items: 
+                  type: object
+                  required:
+                    - curT
+                    - condition
+                  properties:
+                    curT:
+                      type: integer
+                      example: 15.7
+                    condition:
+                      type: string
+                      example: cloudy
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                  message:
+                   type: string

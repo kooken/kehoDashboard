@@ -35,6 +35,24 @@
             <p>{{ average_current_temperature }} ± {{ stddev_current_temperature }}°C</p>
         </div>
     </div>
+    <div class="row">
+        <div class="column">
+            <p><strong>Location:</strong></p>
+            <p>{{ current_weather.location }}</p>
+        </div>
+        <div class="column">
+            <p><strong>Ambient Temperature:</strong></p>
+            <p>{{ current_weather.temperature }}°C</p>
+        </div>
+        <div class="column">
+            <p><strong>Condition:</strong></p>
+            <p>{{ current_weather.condition }}</p>
+        </div>
+        <div class="column">
+            <p><strong>Last Updated:</strong></p>
+            <p>{{ current_weather.last_updated }}</p>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
