@@ -1,8 +1,9 @@
 import json
+import re
 from datetime import datetime
 
 import requests
-from django.db.models import Avg, StdDev
+from django.db.models import Avg, StdDev, Max
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 import folium
@@ -11,10 +12,11 @@ from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.viewsets import ViewSet
 
 from .models import User, Telemetry, WeatherData
 from rest_framework import viewsets, serializers, status
-from .serializers import TelemetrySerializer
+from .serializers import TelemetrySerializer, TelemetryDataSerializer
 from main.models import LoginPassword
 from main.forms import LoginForm
 from .utils import login_required
@@ -38,6 +40,57 @@ def process_dates(date_from_str, date_to_str):
         except ValueError:
             return None, None
     return None, None
+
+
+geo_pattern = re.compile(r'^-?\d{1,2}\.\d{6}$')
+
+
+def validate_geoposition(lat, long):
+    try:
+        lat = float(lat)
+        long = float(long)
+    except ValueError:
+        return False
+
+    if not geo_pattern.match(f"{lat:.6f}") or not (-90 <= lat <= 90):
+        return False
+    if not geo_pattern.match(f"{long:.6f}") or not (-180 <= long <= 180):
+        return False
+
+    return True
+
+
+def fetch_weather():
+    try:
+        response = requests.get(
+            'https://api.weatherapi.com/v1/current.json',
+            params={'key': '17984325ba0f4898b36113347242512', 'q': 'Helsinki', 'lang': 'eng'}
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        location = data.get('location', {})
+        current = data.get('current', {})
+        condition = current.get('condition', {})
+
+        if not location or not current or not condition:
+            raise ValueError("Invalid data format in API response")
+
+        WeatherData.objects.create(
+            location=location.get('name', 'Unknown'),
+            temperature=current.get('temp_c', 0.0),
+            condition=condition.get('text', 'Unknown'),
+            humidity=current.get('humidity', 'Unknown'),
+            wind_speed=current.get('wind_kph', 'Unknown'),
+            last_updated=now()
+        )
+        print(f"Weather data for {location.get('name', 'Unknown')} saved successfully.")
+    except requests.exceptions.RequestException as e:
+        print(f"API Request failed: {e}")
+    except KeyError as e:
+        print(f"Missing key in API response: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 
 def login_view(request):
@@ -86,12 +139,12 @@ def user_details(request, user_id):
     user = get_object_or_404(User, id=user_id)
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
-    print("Date from is", date_from)
-    print("Date to is", date_to)
+    # print("Date from is", date_from)
+    # print("Date to is", date_to)
 
     date_from, date_to = process_dates(date_from, date_to)
-    print("Date from processed is", date_from)
-    print("Date to processed is", date_to)
+    # print("Date from processed is", date_from)
+    # print("Date to processed is", date_to)
 
     telemetry = user.telemetry.all()
     if date_from and date_to:
@@ -124,7 +177,7 @@ def user_details(request, user_id):
         for data in sorted(telemetry, key=lambda x: x.timestamp)
     ]
 
-    print("Coordinates are:", coordinates)
+    # print("Coordinates are:", coordinates)
 
     if telemetry.exists():
         initial_location = [telemetry.first().latitude, telemetry.first().longitude]
@@ -186,7 +239,10 @@ def user_details(request, user_id):
 
     map_html = map_folium._repr_html_()
 
+    fetch_weather()
+
     current_weather = WeatherData.objects.order_by('-last_updated').first()
+    print("Current weather is:", current_weather)
 
     return render(request, 'main/user_details.html', {
         'user': user,
@@ -206,36 +262,83 @@ def user_details(request, user_id):
     })
 
 
+# @csrf_exempt
 class ClientDataView(APIView):
+    def get(self, request, *args, **kwargs):
+        return Response({"detail": "GET method is not supported for this endpoint."},
+                        status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
     def post(self, request, *args, **kwargs):
-        serializer = TelemetryDataSerializer(data=request.query_params)
+        # Use request.data to get JSON body of the POST request
+        print("POST detected in ClisenDataView")
+        serializer = TelemetryDataSerializer(data=request.data)
         if serializer.is_valid():
             data = serializer.validated_data
+            client_id = data['client_id']
 
-            Telemetry.objects.create(
-                user_id=data['client_id'],
-                timestamp=data['first_time'],
-                latitude=data['first_lat'],
-                longitude=data['first_long'],
-                ambient_temperature=data['first_ambT'],
-                thermostat_current_temperature=data['first_curT'],
-                thermostat_target_temperature=data['first_trgT'],
+            user, created = User.objects.get_or_create(
+                email=f"user{client_id}@keho.test",  # Create an email for the user based on client_id
             )
 
+            # If the user was created, you might want to log it
+            if created:
+                print(f"User with email {user.email} and ID {client_id} was created.")
+
+            # Get the last d_time for the client
+            last_d_time = Telemetry.objects.filter(user=user).aggregate(Max('d_time'))['d_time__max']
+            print("Last d time form db:", last_d_time)
+            if last_d_time is None:
+                last_d_time = -1
+
+            print("Current last_d_time is:", last_d_time)
+
+            # Save the first telemetry data
+            Telemetry.objects.get_or_create(
+                user=user,
+                timestamp=data['first_time'],
+                d_time=last_d_time + 1,
+                defaults={
+                    'latitude': data['first_lat'],
+                    'longitude': data['first_long'],
+                    'ambient_temperature': data['first_ambT'],
+                    'thermostat_current_temperature': data['first_curT'],
+                    'thermostat_target_temperature': data['first_trgT'],
+                }
+            )
+
+            last_d_time += 1
+            print("Firstt last_d_time for data is:", last_d_time)
+
+            # Save the rest of the telemetry data
             for telemetry in data['d']:
-                d_time, d_lat, d_long, ambT, curT, trgT = map(float, telemetry.split(","))
-                Telemetry.objects.create(
-                    user_id=data['client_id'],
-                    timestamp=d_time,
-                    latitude=d_lat,
-                    longitude=d_long,
-                    ambient_temperature=ambT,
-                    thermostat_current_temperature=curT,
-                    thermostat_target_temperature=trgT,
-                )
+                d_time = telemetry['dTime']
+                d_lat = telemetry['dLat']
+                d_long = telemetry['dLong']
+                ambT = telemetry['ambT']
+                curT = telemetry['curT']
+                trgT = telemetry['targT']
 
+                if validate_geoposition(d_lat, d_long):
+                    Telemetry.objects.get_or_create(
+                        user=user,
+                        timestamp=data['first_time'],
+                        d_time=d_time,
+                        defaults={
+                            'latitude': d_lat,
+                            'longitude': d_long,
+                            'ambient_temperature': ambT,
+                            'thermostat_current_temperature': curT,
+                            'thermostat_target_temperature': trgT,
+                        }
+                    )
+                else:
+                    print(f"Invalid geo: latitude={d_lat}, longitude={d_long}")
+
+                last_d_time += 1
+                print("last_d_time for the rest of data:", last_d_time)
+
+            # Fetch the latest weather data
             weather_data = WeatherData.objects.order_by('-last_updated').first()
-
             if weather_data:
                 response_data = {
                     "curT": weather_data.temperature,
@@ -252,32 +355,12 @@ class ClientDataView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-def fetch_weather():
-    response = requests.get(
-        'https://api.weatherapi.com/v1/current.json',
-        params={'key': '17984325ba0f4898b36113347242512', 'q': 'Helsinki', 'lang': 'ru'}
-    )
-    data = response.json()
-    WeatherData.objects.create(
-        location=data['location']['name'],
-        temperature=data['current']['temp_c'],
-        condition=data['current']['condition']['text'],
-        last_updated=now()
-    )
-
-
-class TelemetryDataSerializer(serializers.Serializer):
-    client_id = serializers.CharField(max_length=255)
-    first_time = serializers.DateTimeField()
-    first_lat = serializers.FloatField()
-    first_long = serializers.FloatField()
-    first_ambT = serializers.FloatField()
-    first_curT = serializers.FloatField()
-    first_trgT = serializers.FloatField()
-    d = serializers.ListField(
-        child=serializers.CharField(max_length=255)
-    )
-
+class TelemetryDataViewSet(ViewSet):
+    def create(self, request):
+        serializer = TelemetryDataSerializer(data=request.data)
+        if serializer.is_valid():
+            return Response({"message": "Data processed successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # def exchange_data(request):
 #     if request.method == 'POST':

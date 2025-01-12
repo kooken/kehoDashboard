@@ -12,5 +12,8 @@
         <div class="menu">
             <a href="{% url 'main:dashboard' %}" class="{% if request.path == '/' %}active{% endif %}">dashboard</a>
         </div>
+        <div class="menu">
+            <a href="{% url 'main:client_data' %}" class="{% if request.path == '/' %}active{% endif %}">fetch data</a>
+        </div>
     </div>
 </header>

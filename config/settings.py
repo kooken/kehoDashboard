@@ -28,6 +28,7 @@ SECRET_KEY = 'django-insecure-rvw%)kx&nvobne)*7no_7&#=(qt)*gwfwmopv@ak&+cb1xcybg
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# ADD NEW IP HERE
 ALLOWED_HOSTS = []
 
 
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
     'users',
 
     'rest_framework',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -55,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -76,6 +79,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+CORS_ALLOW_ALL_ORIGINS = True
+
+host_ip = os.getenv('HOST', '127.0.0.1')
+CSRF_TRUSTED_ORIGINS = [
+    f'http://{host_ip}:8080',
+    f'http://{host_ip}:8001',
+]
 
 
 # Database
@@ -86,7 +96,8 @@ DATABASES = {
         'ENGINE': os.getenv('POSTGRES_ENGINE'),
         'NAME': os.getenv('POSTGRES_DB'),
         'USER': os.getenv('POSTGRES_USER'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD')
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+        'HOST':os.getenv('HOST'),
     }
 }
 

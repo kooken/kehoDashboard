@@ -1,0 +1,66 @@
+{% extends 'main/base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'main/css/client_data.css' %}" media="screen">
+{% endblock %}
+{% block content %}
+<div class="container">
+    <h2>Weather and Telemetry Data</h2>
+
+    <div class="weather">
+        <p>Current Temperature: <span id="weather-temp">{{ weather_data.temperature }}</span> °C</p>
+        <p>Condition: <span id="weather-condition">{{ weather_data.condition }}</span></p>
+    </div>
+
+    <button class="btn-fetch" onclick="fetchData()">Fetch Data</button>
+
+    <h3>Received Data from Phone</h3>
+    <div id="phoneData">
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    // Fetch data from the server when button is clicked
+function fetchData() {
+    fetch("{% url 'client_data' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            "client_id": 123,  // You can dynamically set this from the session or another source
+            "first_time": "2024-12-28T12:34:00",  // Example timestamp
+            "first_lat": 60.1699,
+            "first_long": 24.9384,
+            "first_ambT": 22.5,
+            "first_curT": 21.0,
+            "first_trgT": 22.0,
+            "d": [
+                "1,60.1700,24.9385,22.6,21.1,22.1",
+                "2,60.1701,24.9386,22.7,21.2,22.2",
+                // Add more telemetry data here
+            ]
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Update weather data on the page
+        document.getElementById("weather-temp").innerText = data.curT;
+        document.getElementById("weather-condition").innerText = data.condition;
+
+        // Display the received telemetry data
+        const phoneDataDiv = document.getElementById("phoneData");
+        phoneDataDiv.innerHTML = '<strong>Received Telemetry:</strong><br>';
+
+        // Assuming the server sends telemetry data as part of the response
+        if (data.telemetry && Array.isArray(data.telemetry)) {
+            data.telemetry.forEach((entry, index) => {
+                phoneDataDiv.innerHTML += `Data ${index + 1}: ${entry.timestamp}, ${entry.latitude}, ${entry.longitude}, ${entry.ambient_temperature}, ${entry.thermostat_current_temperature}, ${entry.thermostat_target_temperature}<br>`;
+            });
+        }
+    })
+    .catch(error => console.error("Error fetching data:", error));
+}
+</script>
+{% endblock %}
