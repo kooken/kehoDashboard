@@ -1,19 +1,17 @@
 import json
 import re
-from datetime import datetime
-
 import requests
+import folium
+from datetime import datetime, timedelta
 from django.db.models import Avg, StdDev, Max
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
-import folium
 from django.utils import timezone
 from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
-
 from .models import User, Telemetry, WeatherData
 from rest_framework import viewsets, serializers, status
 from .serializers import TelemetrySerializer, TelemetryDataSerializer
@@ -25,15 +23,17 @@ from .utils import login_required
 def process_dates(date_from_str, date_to_str):
     if date_from_str and date_to_str:
         try:
-            date_from = datetime.strptime(date_from_str, "%Y-%m-%d")
-            date_to = datetime.strptime(date_to_str, "%Y-%m-%d")
+            if "T" in date_from_str and "T" in date_to_str:
+                date_from = datetime.strptime(date_from_str, "%Y-%m-%dT%H:%M")
+                date_to = datetime.strptime(date_to_str, "%Y-%m-%dT%H:%M")
+            else:
+                date_from = datetime.strptime(date_from_str, "%Y-%m-%d")
+                date_to = datetime.strptime(date_to_str, "%Y-%m-%d")
+
             date_from = timezone.make_aware(date_from)
             date_to = timezone.make_aware(date_to)
 
-            if date_from == date_to:
-                date_to = date_to.replace(hour=23, minute=59, second=59, microsecond=999999)
-            else:
-                date_from = date_from.replace(hour=0, minute=0, second=0, microsecond=0)
+            if date_from.date() == date_to.date() and "T" not in date_to_str:
                 date_to = date_to.replace(hour=23, minute=59, second=59, microsecond=999999)
 
             return date_from, date_to
@@ -110,7 +110,7 @@ def login_view(request):
     return render(request, 'main/login.html', {'form': form, 'error': error})
 
 
-@login_required
+# @login_required
 def dashboard(request):
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
@@ -134,17 +134,21 @@ def dashboard(request):
     })
 
 
-@login_required
+# @login_required
 def user_details(request, user_id):
     user = get_object_or_404(User, id=user_id)
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
-    # print("Date from is", date_from)
-    # print("Date to is", date_to)
 
+    # Debugging raw input
+    print("Raw GET parameters:", request.GET)
+    print("User Date from is", date_from)
+    print("User Date to is", date_to)
+
+    # Processing dates
     date_from, date_to = process_dates(date_from, date_to)
-    # print("Date from processed is", date_from)
-    # print("Date to processed is", date_to)
+    print("User Date from processed is", date_from)
+    print("User Date to processed is", date_to)
 
     telemetry = user.telemetry.all()
     if date_from and date_to:
@@ -270,7 +274,7 @@ class ClientDataView(APIView):
 
     def post(self, request, *args, **kwargs):
         # Use request.data to get JSON body of the POST request
-        print("POST detected in ClisenDataView")
+        print("POST detected in ClientDataView")
         serializer = TelemetryDataSerializer(data=request.data)
         if serializer.is_valid():
             data = serializer.validated_data
@@ -280,62 +284,83 @@ class ClientDataView(APIView):
                 email=f"user{client_id}@keho.test",  # Create an email for the user based on client_id
             )
 
-            # If the user was created, you might want to log it
+            # Log user creation
             if created:
                 print(f"User with email {user.email} and ID {client_id} was created.")
 
-            # Get the last d_time for the client
-            last_d_time = Telemetry.objects.filter(user=user).aggregate(Max('d_time'))['d_time__max']
-            print("Last d time form db:", last_d_time)
-            if last_d_time is None:
-                last_d_time = -1
+            # Get the last values_counter for the client
+            last_values_counter = Telemetry.objects.filter(user=user).aggregate(Max('values_counter'))[
+                'values_counter__max']
+            print("Last values_counter from db:", last_values_counter)
+            if last_values_counter is None:
+                last_values_counter = -1
 
-            print("Current last_d_time is:", last_d_time)
+            print("Current last_values_counter is:", last_values_counter)
+
+            first_time_object = datetime.strptime(data['first_time'], "%Y-%m-%d %H:%M:%S")
+            print("Converted first time is:", first_time_object)
 
             # Save the first telemetry data
             Telemetry.objects.get_or_create(
                 user=user,
-                timestamp=data['first_time'],
-                d_time=last_d_time + 1,
+                timestamp=first_time_object,
+                values_counter=last_values_counter + 1,
                 defaults={
                     'latitude': data['first_lat'],
                     'longitude': data['first_long'],
+                    'mode': data['mode'],
                     'ambient_temperature': data['first_ambT'],
                     'thermostat_current_temperature': data['first_curT'],
                     'thermostat_target_temperature': data['first_trgT'],
                 }
             )
 
-            last_d_time += 1
-            print("Firstt last_d_time for data is:", last_d_time)
+            last_values_counter += 1
+            print("First last_values_counter for data is:", last_values_counter)
 
             # Save the rest of the telemetry data
             for telemetry in data['d']:
-                d_time = telemetry['dTime']
-                d_lat = telemetry['dLat']
-                d_long = telemetry['dLong']
-                ambT = telemetry['ambT']
-                curT = telemetry['curT']
-                trgT = telemetry['targT']
+                # d_time = telemetry['dTime']
+                # d_lat = telemetry['dLat']
+                # d_long = telemetry['dLong']
+                # ambT = telemetry['ambT']
+                # curT = telemetry['curT']
+                # trgT = telemetry['targT']
+                # d_time = telemetry['dTime']
+                sample_time_object = first_time_object + timedelta(seconds=telemetry['dTime'])
+                d_lat = data['first_lat'] + telemetry['dLat'] / 1000000
+                d_long = data['first_long'] + telemetry['dLong'] / 1000000
+                ambT = data['first_ambT'] + telemetry['ambT'] / 100
+                curT = data['first_curT'] + telemetry['curT'] / 100
+                trgT = data['first_trgT'] + telemetry['targT'] / 100
+
+                print(
+                    f"Saved to database: time {sample_time_object}\n"
+                    f"latitude {d_lat}\n"
+                    f"longitude {d_long}\n"
+                    f"ambient temp {ambT}\n"
+                    f"current temp {curT}\n"
+                    f"target temp {trgT}\n")
 
                 if validate_geoposition(d_lat, d_long):
                     Telemetry.objects.get_or_create(
                         user=user,
-                        timestamp=data['first_time'],
-                        d_time=d_time,
+                        timestamp=sample_time_object.strftime("%Y-%m-%d %H:%M:%S"),
+                        values_counter=last_values_counter,
                         defaults={
                             'latitude': d_lat,
                             'longitude': d_long,
                             'ambient_temperature': ambT,
                             'thermostat_current_temperature': curT,
                             'thermostat_target_temperature': trgT,
+                            'mode': data['mode'],
                         }
                     )
                 else:
-                    print(f"Invalid geo: latitude={d_lat}, longitude={d_long}")
+                    print(f"Invalid geolocation: latitude={d_lat}, longitude={d_long}")
 
-                last_d_time += 1
-                print("last_d_time for the rest of data:", last_d_time)
+                last_values_counter += 1
+                print("last_values_counter for the rest of data:", last_values_counter)
 
             # Fetch the latest weather data
             weather_data = WeatherData.objects.order_by('-last_updated').first()
@@ -361,44 +386,3 @@ class TelemetryDataViewSet(ViewSet):
         if serializer.is_valid():
             return Response({"message": "Data processed successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# def exchange_data(request):
-#     if request.method == 'POST':
-#         data = json.loads(request.body)
-#         telemetry = Telemetry.objects.create(
-#             latitude=data.get('first_lat'),
-#             longitude=data.get('first_long'),
-#             timestamp=data.get('first_time'),
-#             ambient_temperature=data.get('first_ambT'),
-#             thermostat_target_temperature=data.get('first_trgT'),
-#             thermostat_current_temperature=data.get('first_curT'),
-#         )
-#
-#         latest_weather = WeatherData.objects.latest('last_updated')
-#         response_data = {
-#             "curT": latest_weather.temperature,
-#             "condition": latest_weather.condition
-#         }
-#         return JsonResponse(response_data, status=200)
-#
-#     return JsonResponse({"error": "Invalid method"}, status=400)
-
-
-# class TelemetryViewSet(viewsets.ViewSet):
-#     def create(self, request):
-#         email = request.data.get('email')
-#         user, _ = User.objects.get_or_create(email=email)
-#
-#         telemetry_data = {
-#             'user': user.id,
-#             'latitude': request.data.get('latitude'),
-#             'longitude': request.data.get('longitude'),
-#             'ambient_temperature': request.data.get('ambient_temperature'),
-#             'thermostat_target_temperature': request.data.get('thermostat_target_temperature'),
-#             'thermostat_current_temperature': request.data.get('thermostat_current_temperature'),
-#         }
-#
-#         serializer = TelemetrySerializer(data=telemetry_data)
-#         serializer.is_valid(raise_exception=True)
-#         serializer.save()
-#         return Response({"status": "success", "data": serializer.data})

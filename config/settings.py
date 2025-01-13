@@ -81,11 +81,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 CORS_ALLOW_ALL_ORIGINS = True
 
-host_ip = os.getenv('HOST', '127.0.0.1')
-CSRF_TRUSTED_ORIGINS = [
-    f'http://{host_ip}:8080',
-    f'http://{host_ip}:8001',
-]
+# host_ip = os.getenv('HOST', '127.0.0.1')
+# CSRF_TRUSTED_ORIGINS = [
+#     f'http://{host_ip}:8080',
+#     f'http://{host_ip}:8001',
+# ]
 
 
 # Database
@@ -97,7 +97,7 @@ DATABASES = {
         'NAME': os.getenv('POSTGRES_DB'),
         'USER': os.getenv('POSTGRES_USER'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-        'HOST':os.getenv('HOST'),
+        # 'HOST':os.getenv('HOST'),
     }
 }
 

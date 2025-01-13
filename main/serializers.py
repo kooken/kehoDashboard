@@ -10,6 +10,7 @@ class TelemetrySerializer(serializers.Serializer):
     ambT = serializers.FloatField()
     curT = serializers.FloatField()
     targT = serializers.FloatField()
+    mode = serializers.IntegerField()
 
 class UserSerializer(serializers.ModelSerializer):
     telemetry = TelemetrySerializer(many=True, read_only=True)
@@ -26,6 +27,7 @@ class TelemetryDataSerializer(serializers.Serializer):
     first_ambT = serializers.FloatField()
     first_curT = serializers.FloatField()
     first_trgT = serializers.FloatField()
+    mode = serializers.IntegerField()
     d = serializers.ListField(
         child=TelemetrySerializer()
     )
