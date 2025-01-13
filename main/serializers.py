@@ -27,7 +27,7 @@ class TelemetryDataSerializer(serializers.Serializer):
     first_ambT = serializers.FloatField()
     first_curT = serializers.FloatField()
     first_trgT = serializers.FloatField()
-    mode = serializers.IntegerField()
+    first_mode = serializers.IntegerField()
     d = serializers.ListField(
         child=TelemetrySerializer()
     )

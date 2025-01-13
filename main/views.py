@@ -7,7 +7,7 @@ from django.db.models import Avg, StdDev, Max
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
-from django.utils.timezone import now
+from django.utils.timezone import now, make_aware, is_naive
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -114,12 +114,12 @@ def login_view(request):
 def dashboard(request):
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
-    print("Date from is", date_from)
-    print("Date to is", date_to)
+    # print("Date from is", date_from)
+    # print("Date to is", date_to)
 
     date_from, date_to = process_dates(date_from, date_to)
-    print("Date from processed is", date_from)
-    print("Date to processed is", date_to)
+    # print("Date from processed is", date_from)
+    # print("Date to processed is", date_to)
 
     users = User.objects.all()
 
@@ -141,14 +141,14 @@ def user_details(request, user_id):
     date_to = request.GET.get('date_to')
 
     # Debugging raw input
-    print("Raw GET parameters:", request.GET)
-    print("User Date from is", date_from)
-    print("User Date to is", date_to)
+    # print("Raw GET parameters:", request.GET)
+    # print("User Date from is", date_from)
+    # print("User Date to is", date_to)
 
     # Processing dates
     date_from, date_to = process_dates(date_from, date_to)
-    print("User Date from processed is", date_from)
-    print("User Date to processed is", date_to)
+    # print("User Date from processed is", date_from)
+    # print("User Date to processed is", date_to)
 
     telemetry = user.telemetry.all()
     if date_from and date_to:
@@ -157,8 +157,10 @@ def user_details(request, user_id):
             timestamp__lte=date_to
         )
 
+    telemetry_sorted = sorted(telemetry, key=lambda x: x.timestamp, reverse=True)
+
     telemetry_data = []
-    for t in telemetry:
+    for t in telemetry_sorted[:50]:
         telemetry_data.append({
             'timestamp': t.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
             'target_temperature': round(t.thermostat_target_temperature, 2),
@@ -255,7 +257,7 @@ def user_details(request, user_id):
     fetch_weather()
 
     current_weather = WeatherData.objects.order_by('-last_updated').first()
-    print("Current weather is:", current_weather)
+    # print("Current weather is:", current_weather)
 
     return render(request, 'main/user_details.html', {
         'user': user,
@@ -319,10 +321,16 @@ class ClientDataView(APIView):
 
             print("Converted first time is:", first_time_object)
 
+            # first_time_object = datetime.strptime(data['first_time'], "%Y-%m-%d %H:%M:%S")
+            # print("Converted first time is:", first_time_object)
+            if is_naive(first_time_object):
+                timestamp_first_aware = make_aware(first_time_object)
+            else:
+                timestamp_first_aware = first_time_object
             # Save the first telemetry data
             Telemetry.objects.get_or_create(
                 user=user,
-                timestamp=first_time_object,
+                timestamp=timestamp_first_aware,
                 values_counter=last_values_counter + 1,
                 defaults={
                     'latitude': data['first_lat'],
@@ -330,9 +338,10 @@ class ClientDataView(APIView):
                     'ambient_temperature': data['first_ambT'],
                     'thermostat_current_temperature': data['first_curT'],
                     'thermostat_target_temperature': data['first_trgT'],
+                    'mode': data['first_mode'],
                 }
             )
-
+            print("User saved to database: ", user)
             last_values_counter += 1
             print("First last_values_counter for data is:", last_values_counter)
 
@@ -347,27 +356,34 @@ class ClientDataView(APIView):
                 # d_time = telemetry['dTime']
                 d_time_seconds = int(telemetry['dTime'])
                 sample_time_object = first_time_object + timedelta(seconds=d_time_seconds)
+                # sample_time_object = first_time_object + timedelta(seconds=telemetry['dTime'])
                 d_lat = data['first_lat'] + telemetry['dLat'] / 1000000
                 d_long = data['first_long'] + telemetry['dLong'] / 1000000
                 ambT = data['first_ambT'] + telemetry['ambT'] / 100
                 curT = data['first_curT'] + telemetry['curT'] / 100
                 trgT = data['first_trgT'] + telemetry['targT'] / 100
-                mode = str(telemetry.get('mode', 'off'))  # Извлекаем 'mode' из каждого элемента telemetry
+                mode = str(telemetry.get('mode', 'off'))
                 print(f"Mode received in telemetry: {mode}")
 
                 print(
                     f"Saved to database: time {sample_time_object}\n"
                     f"user {user.display_name}\n"
+                    f"mode {mode}\n"
                     f"latitude {d_lat}\n"
                     f"longitude {d_long}\n"
                     f"ambient temp {ambT}\n"
                     f"current temp {curT}\n"
                     f"target temp {trgT}\n")
 
+                if is_naive(sample_time_object):
+                    timestamp_aware = make_aware(sample_time_object)
+                else:
+                    timestamp_aware = sample_time_object
+
                 if validate_geoposition(d_lat, d_long):
-                    Telemetry.objects.get_or_create(
+                    telemetry_record, created = Telemetry.objects.get_or_create(
                         user=user,
-                        timestamp=sample_time_object.strftime("%Y-%m-%d %H:%M:%S"),
+                        timestamp=timestamp_aware,
                         values_counter=last_values_counter,
                         defaults={
                             'latitude': d_lat,
@@ -378,6 +394,7 @@ class ClientDataView(APIView):
                             'mode': mode,
                         }
                     )
+                    print("Mode saved to database: ", telemetry_record.mode)
                 else:
                     print(f"Invalid geolocation: latitude={d_lat}, longitude={d_long}")
 

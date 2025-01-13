@@ -31,6 +31,7 @@
     <tr>
         <th>#</th>
         <th>Email</th>
+        <th>Display Name</th>
         <th>Status</th>
         <th>Action</th>
     </tr>
@@ -38,6 +39,7 @@
     <tr>
         <td>{{ forloop.counter }}</td>
         <td>{{ user.email }}</td>
+        <td>{{ user.display_name }}</td>
         <td>
             {% if date_from and date_to %}
             {% if user.telemetry_filtered.exists %}
