@@ -12,8 +12,9 @@ class Telemetry(models.Model):
     ambient_temperature = models.FloatField()
     thermostat_target_temperature = models.FloatField()
     thermostat_current_temperature = models.FloatField()
-    d_time = models.IntegerField()
-    mode = models.IntegerField()
+    d_time = models.IntegerField(null=True, blank=True)
+    mode = models.IntegerField(null=True, blank=True)
+    values_counter = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
         return f"Telemetry for {self.user.email} at {self.timestamp}"

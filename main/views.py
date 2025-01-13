@@ -157,6 +157,15 @@ def user_details(request, user_id):
             timestamp__lte=date_to
         )
 
+    telemetry_data = []
+    for t in telemetry:
+        telemetry_data.append({
+            'timestamp': t.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            'target_temperature': round(t.thermostat_target_temperature, 2),
+            'current_temperature': round(t.thermostat_current_temperature, 2),
+            'mode': t.mode
+        })
+
     average_ambient_temperature = telemetry.aggregate(Avg('ambient_temperature'))['ambient_temperature__avg'] or 0
     average_target_temperature = telemetry.aggregate(Avg('thermostat_target_temperature'))[
                                      'thermostat_target_temperature__avg'] or 0
@@ -263,6 +272,7 @@ def user_details(request, user_id):
         'stddev_target_temperature': round(stddev_target_temperature, 2),
         'stddev_current_temperature': round(stddev_current_temperature, 2),
         'current_weather': current_weather,
+        'telemetry_data': telemetry_data,
     })
 
 
@@ -297,7 +307,16 @@ class ClientDataView(APIView):
 
             print("Current last_values_counter is:", last_values_counter)
 
-            first_time_object = datetime.strptime(data['first_time'], "%Y-%m-%d %H:%M:%S")
+            if isinstance(data['first_time'], str):
+                try:
+                    first_time_object = datetime.strptime(data['first_time'], "%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    print(f"Error parsing date: {data['first_time']}")
+            elif isinstance(data['first_time'], datetime):
+                first_time_object = data['first_time']
+            else:
+                print("Unexpected type for 'first_time'. It is not a string or datetime.")
+
             print("Converted first time is:", first_time_object)
 
             # Save the first telemetry data
@@ -308,7 +327,6 @@ class ClientDataView(APIView):
                 defaults={
                     'latitude': data['first_lat'],
                     'longitude': data['first_long'],
-                    'mode': data['mode'],
                     'ambient_temperature': data['first_ambT'],
                     'thermostat_current_temperature': data['first_curT'],
                     'thermostat_target_temperature': data['first_trgT'],
@@ -327,15 +345,19 @@ class ClientDataView(APIView):
                 # curT = telemetry['curT']
                 # trgT = telemetry['targT']
                 # d_time = telemetry['dTime']
-                sample_time_object = first_time_object + timedelta(seconds=telemetry['dTime'])
+                d_time_seconds = int(telemetry['dTime'])
+                sample_time_object = first_time_object + timedelta(seconds=d_time_seconds)
                 d_lat = data['first_lat'] + telemetry['dLat'] / 1000000
                 d_long = data['first_long'] + telemetry['dLong'] / 1000000
                 ambT = data['first_ambT'] + telemetry['ambT'] / 100
                 curT = data['first_curT'] + telemetry['curT'] / 100
                 trgT = data['first_trgT'] + telemetry['targT'] / 100
+                mode = str(telemetry.get('mode', 'off'))  # Извлекаем 'mode' из каждого элемента telemetry
+                print(f"Mode received in telemetry: {mode}")
 
                 print(
                     f"Saved to database: time {sample_time_object}\n"
+                    f"user {user.display_name}\n"
                     f"latitude {d_lat}\n"
                     f"longitude {d_long}\n"
                     f"ambient temp {ambT}\n"
@@ -353,7 +375,7 @@ class ClientDataView(APIView):
                             'ambient_temperature': ambT,
                             'thermostat_current_temperature': curT,
                             'thermostat_target_temperature': trgT,
-                            'mode': data['mode'],
+                            'mode': mode,
                         }
                     )
                 else:
