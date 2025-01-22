@@ -8,20 +8,20 @@
     <h2>Choose Dates and Time</h2>
     <label for="date_from">From:</label>
     <input
-        type="datetime-local"
-        id="date_from"
-        name="date_from"
-        value="{{ date_from|date:'Y-m-d\TH:i'|default:'' }}"
-        required
+            type="datetime-local"
+            id="date_from"
+            name="date_from"
+            value="{{ date_from|date:'Y-m-d\TH:i'|default:'' }}"
+            required
     >
 
     <label for="date_to">To:</label>
     <input
-        type="datetime-local"
-        id="date_to"
-        name="date_to"
-        value="{{ date_to|date:'Y-m-d\TH:i'|default:'' }}"
-        required
+            type="datetime-local"
+            id="date_to"
+            name="date_to"
+            value="{{ date_to|date:'Y-m-d\TH:i'|default:'' }}"
+            required
     >
 
     <button type="submit" class="btn-filter">Filter</button>
@@ -30,7 +30,7 @@
 <table>
     <tr>
         <th>#</th>
-        <th>Email</th>
+        <th>Device</th>
         <th>Display Name</th>
         <th>Status</th>
         <th>Action</th>
@@ -38,7 +38,7 @@
     {% for user in users %}
     <tr>
         <td>{{ forloop.counter }}</td>
-        <td>{{ user.email }}</td>
+        <td>{{ user.short_email }}</td>
         <td>{{ user.display_name }}</td>
         <td>
             {% if date_from and date_to %}
@@ -54,7 +54,8 @@
         <td>
             {% if date_from and date_to %}
             {% if user.telemetry_filtered.exists %}
-            <a href="{% url 'main:user_details' user.id %}?date_from={{ date_from|date:'Y-m-d\TH:i' }}&date_to={{ date_to|date:'Y-m-d\TH:i' }}">View Details</a>
+            <a href="{% url 'main:user_details' user.id %}?date_from={{ date_from|date:'Y-m-d\TH:i' }}&date_to={{ date_to|date:'Y-m-d\TH:i' }}">View
+                Details</a>
             {% else %}
             No data found
             {% endif %}
@@ -64,5 +65,31 @@
         </td>
     </tr>
     {% endfor %}
+</table>
+<table>
+    <thead>
+    <tr>
+        <th>#</th>
+        <th>Display Name</th>
+        <th>Record Date</th>
+        <th>Total Recorded Minutes</th>
+        <th>Total Lost Minutes</th>
+        <th>Total Valid Minutes</th>
+        <th>Percent of Lost Minutes</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for row in lost_data %}
+    <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ row.display_name }}</td>
+        <td>{{ row.record_date }}</td>
+        <td>{{ row.total_recorded_minutes }}</td>
+        <td>{{ row.total_lost_minutes }}</td>
+        <td>{{ row.total_valid_minutes }}</td>
+        <td>{{ row.percent_lost_minutes }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
 </table>
 {% endblock %}

@@ -2,7 +2,11 @@ import json
 import re
 import requests
 import folium
+import logging
 from datetime import datetime, timedelta
+
+from django.core.mail import mail_admins
+from django.db import connection
 from django.db.models import Avg, StdDev, Max
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
@@ -14,11 +18,23 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 from .models import User, Telemetry, WeatherData
 from rest_framework import viewsets, serializers, status
+
+from .queries import lost_minutes_query
 from .serializers import TelemetrySerializer, TelemetryDataSerializer
 from main.models import LoginPassword
 from main.forms import LoginForm
 from .utils import login_required
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+file_handler = logging.FileHandler('weather_fetch.log')
+file_handler.setLevel(logging.INFO)
+
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
 
 def process_dates(date_from_str, date_to_str):
     if date_from_str and date_to_str:
@@ -85,12 +101,42 @@ def fetch_weather():
             last_updated=now()
         )
         print(f"Weather data for {location.get('name', 'Unknown')} saved successfully.")
+
     except requests.exceptions.RequestException as e:
-        print(f"API Request failed: {e}")
+        error_message = f"API Request failed: {e}"
+        print(error_message)
+        mail_admins(
+            subject="Weather API Request Error",
+            message=f"An error occurred during the API request: {e}",
+            fail_silently=False,
+        )
+
     except KeyError as e:
-        print(f"Missing key in API response: {e}")
+        error_message = f"Missing key in API response: {e}"
+        print(error_message)
+        mail_admins(
+            subject="Weather API Missing Key Error",
+            message=f"A missing key error occurred: {e}",
+            fail_silently=False,
+        )
+
+    except OSError as e:
+        error_message = f"OSError occurred: {e}"
+        print(error_message)
+        mail_admins(
+            subject="OSError in Weather Fetching",
+            message=f"An OSError occurred during weather fetching: {e}",
+            fail_silently=False,
+        )
+
     except Exception as e:
-        print(f"An error occurred: {e}")
+        error_message = f"An unknown error occurred: {e}"
+        print(error_message)
+        mail_admins(
+            subject="Unknown Error in Weather Fetching",
+            message=f"An unknown error occurred: {e}",
+            fail_silently=False,
+        )
 
 
 def login_view(request):
@@ -122,6 +168,16 @@ def dashboard(request):
     # print("Date to processed is", date_to)
 
     users = User.objects.all()
+    for user in users:
+        user.short_email = user.email.split('@')[0]
+
+    with connection.cursor() as cursor:
+        cursor.execute(lost_minutes_query)
+        results = cursor.fetchall()
+        columns = [col[0] for col in cursor.description]  # Get column names
+
+    # Prepare data for template
+    lost_data = [dict(zip(columns, row)) for row in results]
 
     for user in users:
         user.telemetry_filtered = user.telemetry.filter(timestamp__gte=date_from,
@@ -131,6 +187,7 @@ def dashboard(request):
         'users': users,
         'date_from': date_from,
         'date_to': date_to,
+        'lost_data': lost_data,
     })
 
 
@@ -165,6 +222,7 @@ def user_details(request, user_id):
             'timestamp': t.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
             'target_temperature': round(t.thermostat_target_temperature, 2),
             'current_temperature': round(t.thermostat_current_temperature, 2),
+            'ambient_temperature': round(t.ambient_temperature, 2),
             'mode': t.mode
         })
 
@@ -425,3 +483,14 @@ class TelemetryDataViewSet(ViewSet):
         if serializer.is_valid():
             return Response({"message": "Data processed successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+def test_error(request):
+    try:
+        raise OSError("Test error")
+    except OSError as e:
+        mail_admins(
+            subject="Test Error Notification",
+            message=f"An error occurred: {e}",
+        )
+        return HttpResponse("An error was raised and admins were notified.")

@@ -34,7 +34,6 @@ th {
 tr:hover {
     background-color: #d6bfff;
 }
-
 .dates-form {
     margin: 30px auto;
     background-color: #F9FCF8;
@@ -43,7 +42,7 @@ tr:hover {
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     width: 100%;
-    max-width: 400px;
+    max-width: 1200px;
 }
 
 .dates-form h2 {
@@ -54,9 +53,12 @@ tr:hover {
     margin-bottom: 20px;
 }
 
-.dates-form .form-group {
-    font-family: 'Raleway', sans-serif;
-    margin-bottom: 20px;
+.dates-form .form-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
 }
 
 .dates-form .form-label {
@@ -67,14 +69,13 @@ tr:hover {
 
 .dates-form input {
     font-family: 'Raleway', sans-serif;
-    width: 100%;
     padding: 12px;
     font-size: 16px;
     border: 1px solid #1EB32D;
     border-radius: 4px;
-    margin-top: 15px;
-    margin-bottom: 15px;
     box-sizing: border-box;
+    width: 30%;
+    min-width: 150px;
 }
 
 .dates-form input:focus {
@@ -99,8 +100,9 @@ tr:hover {
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    width: 100%;
     text-align: center;
+    width: 15%;
+    min-width: 120px;
 }
 
 .dates-form .btn-filter:hover {
