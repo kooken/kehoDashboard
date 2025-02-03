@@ -83,3 +83,8 @@ th {
 tr:hover {
     background-color: #d6bfff;
 }
+
+.highlight-text {
+    color: red;
+    font-weight: bold;
+}

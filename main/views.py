@@ -7,7 +7,8 @@ from datetime import datetime, timedelta
 
 from django.core.mail import mail_admins
 from django.db import connection
-from django.db.models import Avg, StdDev, Max
+from django.db.models import Avg, StdDev, Max, Func, F, Value, CharField, IntegerField, Case, When
+from django.db.models.functions import Cast
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
@@ -214,17 +215,71 @@ def user_details(request, user_id):
             timestamp__lte=date_to
         )
 
+    # telemetry = telemetry.annotate(
+    #     mode_binary=Func(
+    #         F('mode'),
+    #         function='to_char',  # You can keep to_char, but let's use the correct format
+    #         template="to_char(%(expressions)s, 'FM999')",  # Ensure it gives us a 3-digit string
+    #         output_field=CharField()
+    #     )
+    # )
+
+    telemetry = telemetry.annotate(
+        mode_int=Func(
+            F('mode'),
+            function='CAST',
+            template='%(expressions)s::INTEGER',
+            output_field=IntegerField()
+        ),
+        # Checking the 1st bit
+        mode_bit_1=Case(
+            When(mode_int__gte=1, then=Value(1)),
+            default=Value(0),
+            output_field=IntegerField()
+        ),
+        # Checking the 2nd bit
+        mode_bit_2=Case(
+            When(mode_int__gte=2, then=Value(1)),
+            default=Value(0),
+            output_field=IntegerField()
+        ),
+        # Checking the 3rd bit
+        mode_bit_3=Case(
+            When(mode_int__gte=4, then=Value(1)),
+            default=Value(0),
+            output_field=IntegerField()
+        )
+    )
+
     telemetry_sorted = sorted(telemetry, key=lambda x: x.timestamp, reverse=True)
 
+    # table
     telemetry_data = []
-    for t in telemetry_sorted[:50]:
+    for t in telemetry_sorted[:100]:
+        # Get the binary representation of the mode
+        mode_binary = bin(t.mode)[2:].zfill(3)
+
+        # Split the binary string into 3 separate bits
+        mode_bit_1 = int(mode_binary[0])  # First bit
+        mode_bit_2 = int(mode_binary[1])  # Second bit
+        mode_bit_3 = int(mode_binary[2])  # Third bit
+
+        # Map each bit to a specific temperature
+        # mode_1_temperature = -20 if mode_bit_1 == 1 else -30
+        # mode_2_temperature = -20 if mode_bit_2 == 1 else -30
+        # mode_3_temperature = -20 if mode_bit_3 == 1 else -30
+
+        # Append the data to the telemetry_data list
         telemetry_data.append({
             'timestamp': t.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
             'target_temperature': round(t.thermostat_target_temperature, 2),
             'current_temperature': round(t.thermostat_current_temperature, 2),
             'ambient_temperature': round(t.ambient_temperature, 2),
-            'mode': t.mode
+            'mode_1_temperature': mode_bit_1,
+            'mode_2_temperature': mode_bit_2,
+            'mode_3_temperature': mode_bit_3,
         })
+         # bin(int(t.mode))[2:].zfill(3) if t.mode.isdigit() else None
 
     average_ambient_temperature = telemetry.aggregate(Avg('ambient_temperature'))['ambient_temperature__avg'] or 0
     average_target_temperature = telemetry.aggregate(Avg('thermostat_target_temperature'))[
@@ -246,6 +301,7 @@ def user_details(request, user_id):
             "ambient_temperature": round(data.ambient_temperature, 2),
             "target_temperature": round(data.thermostat_target_temperature, 2),
             "current_temperature": round(data.thermostat_current_temperature, 2),
+            'mode': bin(t.mode)[2:].zfill(3)
         }
         for data in sorted(telemetry, key=lambda x: x.timestamp)
     ]

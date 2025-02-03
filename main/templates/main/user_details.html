@@ -62,38 +62,44 @@
             <p>{{ current_weather.last_updated }}</p>
         </div>
     </div>
-        <div class="row">
+    <div class="row">
         <div class="column">
             <table>
                 <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Time</th>
-                        <th>Target Temperature (°C)</th>
-                        <th>Current Temperature (°C)</th>
-                        <th>Ambient Temperature (°C)</th>
-                        <th>Mode</th>
-                    </tr>
+                <tr>
+                    <th>#</th>
+                    <th>Time</th>
+                    <th>Target Temperature (°C)</th>
+                    <th>Current Temperature (°C)</th>
+                    <th>Ambient Temperature (°C)</th>
+                    <th>Sensor</th>
+                    <th>Jacket</th>
+                    <th>Mode</th>
+                </tr>
                 </thead>
                 <tbody>
-                    {% for telemetry in telemetry_data %}
-                        <tr>
-                            <td>{{ forloop.counter }}</td>
-                            <td>{{ telemetry.timestamp }}</td>
-                            <td>{{ telemetry.target_temperature }}</td>
-                            <td>{{ telemetry.current_temperature }}</td>
-                            <td>{{ telemetry.ambient_temperature }}</td>
-                            <td>{{ telemetry.mode }}</td>
-                        </tr>
-                    {% endfor %}
+                {% for telemetry in telemetry_data %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ telemetry.timestamp }}</td>
+                    <td>{{ telemetry.target_temperature }}</td>
+                    <td>{{ telemetry.current_temperature }}</td>
+                    <td>{{ telemetry.ambient_temperature }}</td>
+                    <td class="{% if telemetry.mode_1_temperature == 0 %}highlight-text{% endif %}">
+                        {{ telemetry.mode_1_temperature }}
+                    </td>
+                    <td class="{% if telemetry.mode_2_temperature == 0 %}highlight-text{% endif %}">
+                        {{ telemetry.mode_2_temperature }}
+                    </td>
+                    <td>{{ telemetry.mode_3_temperature }}</td>
+                </tr>
+                {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
-    </div>
 </div>
-
-
+</div>
 {% endblock %}
 
 {% block extra_js %}

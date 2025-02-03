@@ -26,7 +26,7 @@ load_dotenv(BASE_DIR / '.env')
 SECRET_KEY = 'django-insecure-rvw%)kx&nvobne)*7no_7&#=(qt)*gwfwmopv@ak&+cb1xcybg'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 # ADD NEW IP HERE
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
@@ -138,6 +138,7 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'main/static'),
 ]
+STATIC_ROOT = 'staticfiles/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

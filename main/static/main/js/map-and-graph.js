@@ -37,6 +37,39 @@ const chart = new Chart(ctx, {
                 tension: 0.4,
                 fill: false,
             },
+            {
+                label: 'Sensor connect',
+                data: telemetry.map(c => c.mode_bit_1 === 1 ? -20 : -30),  // Map mode_bit_1 to -20 or -30
+                borderColor: 'purple',
+                backgroundColor: 'purple',
+                borderWidth: 2,
+                pointBackgroundColor: 'purple',
+                pointBorderColor: 'purple',
+                tension: 0.4,
+                fill: false,
+            },
+            {
+                label: 'Jacket connect',
+                data: telemetry.map(c => c.mode_bit_2 === 1 ? -20 : -30),  // Map mode_bit_2 to -20 or -30
+                borderColor: 'orange',
+                backgroundColor: 'orange',
+                borderWidth: 2,
+                pointBackgroundColor: 'orange',
+                pointBorderColor: 'orange',
+                tension: 0.4,
+                fill: false,
+            },
+            {
+                label: 'Jacket mode',
+                data: telemetry.map(c => c.mode_bit_3 === 1 ? -20 : -30),  // Map mode_bit_3 to -20 or -30
+                borderColor: 'yellow',
+                backgroundColor: 'yellow',
+                borderWidth: 2,
+                pointBackgroundColor: 'yellow',
+                pointBorderColor: 'yellow',
+                tension: 0.4,
+                fill: false,
+            },
         ],
     },
     options: {
